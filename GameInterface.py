@@ -4,7 +4,7 @@ from time import sleep
 import time, pyautogui
 from pynput.keyboard import Key, Controller
 import cv2 
-from numpy import asarray
+import numpy as np
     
 CameraRecord = []
 print("Digital Video Project: begin")
@@ -50,10 +50,11 @@ if __name__== '__main__':
       
     i=0
     for im in CameraRecord:
-        #CameraRecord[i].show()#Showing is very slow
+      #  CameraRecord[i].show()#Showing is very slow
         i=i+1
-        numpydata = asarray(im)
-        cv2.imwrite("test_"+str(i)+".png", numpydata) 
+        numpydata = np.array(im.convert('RGB'))
+        destRGB = cv2.cvtColor(numpydata, cv2.COLOR_BGR2RGB)
+        cv2.imwrite("test_"+str(i)+".png", destRGB) 
     print("end")
 
     
