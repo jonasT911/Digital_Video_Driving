@@ -42,7 +42,7 @@ if __name__== '__main__':
     driver =gameInterface()
     key="w"
     x=0
-    while x<15:
+    while x<25:
         driver.takePicture()
         driver.drive()
         #print("Picture taken")
