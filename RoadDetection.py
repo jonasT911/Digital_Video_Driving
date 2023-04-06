@@ -1,15 +1,22 @@
 import cv2
 import numpy as np
+from math import sqrt
 
-def colorDifferenceRGB(colorOne,colorTwo):
-    pass
     
 def luminenceDifference(colorOne,colorTwo):
     pass
     
 def findRoad( roadColor, picture):
-    
-    pass
+    outPic=np.array(picture, dtype=np.uint8)
+    diffFromRoad=picture-roadColor
+    R=diffFromRoad[:,:,0]**2
+    G=diffFromRoad[:,:,1]**2
+    B=diffFromRoad[:,:,2]**2
+    total=R+B+G #I need to check if there are overflow errors
+    for j in range(total.shape[0]):
+        differences = [sqrt(i) for i in total[j]]
+        outPic[j]=np.reshape(differences, (outPic.shape[1], 1))
+    print(total)
     
 def updateRoadColor(picture):
     width=picture.shape[1]
@@ -34,3 +41,4 @@ if __name__== '__main__':
     color = updateRoadColor(img)
     print("color is " +str(color))
     
+    findRoad( color, img)
