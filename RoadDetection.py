@@ -5,18 +5,30 @@ from math import sqrt
     
 def luminenceDifference(colorOne,colorTwo):
     pass
+        
+def convertToYUV(color):
+    pass
     
 def findRoad( roadColor, picture):
     outPic=np.array(picture, dtype=np.uint8)
-    diffFromRoad=picture-roadColor
+    diffPic=np.array(picture, dtype=np.uint8)
+    diffSmall=picture-roadColor
+    diffFromRoad=np.array(diffSmall, dtype=np.uint32)
     R=diffFromRoad[:,:,0]**2
     G=diffFromRoad[:,:,1]**2
     B=diffFromRoad[:,:,2]**2
+    print("Initial " + str(diffFromRoad[0][0][0]))
+    print("Squared " + str(R[0][0]))
+    print("Squared " + str(G[0][0]))
+    print("Squared " + str(B[0][0]))
     total=R+B+G #I need to check if there are overflow errors
     for j in range(total.shape[0]):
-        differences = [sqrt(i) for i in total[j]]
-        outPic[j]=np.reshape(differences, (outPic.shape[1], 1))
-    print(total)
+        differences = [(sqrt(i)<100)*255 for i in total[j]]
+        diffPic[j]=np.reshape(differences, (outPic.shape[1], 1))
+        
+    
+    cv2.imwrite("diffPic.png", diffPic) 
+    return diffPic
     
 def updateRoadColor(picture):
     width=picture.shape[1]
@@ -41,4 +53,4 @@ if __name__== '__main__':
     color = updateRoadColor(img)
     print("color is " +str(color))
     
-    findRoad( color, img)
+    photo = findRoad( color, img)
