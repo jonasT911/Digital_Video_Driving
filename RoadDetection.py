@@ -40,23 +40,39 @@ def findRoadRGB( roadColor, picture):
     for j in range(total.shape[0]):
         differences = [(sqrt(i)<100)*255 for i in total[j]]
         diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
-  
+    print("done with for")
     return diffPic
     
 def findRoadYUV( roadColor, picture):
-    
+
+    diffColor=np.array(picture, dtype=np.uint8)
+    combine=np.array(picture, dtype=np.uint8)
+    diffSmall=picture-roadColor
+    diffFromRoad=np.array(diffSmall, dtype=np.uint32)
+    R=diffFromRoad[:,:,0]**2
+    G=diffFromRoad[:,:,1]**2
+    B=diffFromRoad[:,:,2]**2
+    totalRBG=R+B+G
+     
     diffPic=convertToYUV(picture)
     target=convertToYUV(roadColor)
-    
+    print("Conversions Done")
     diffFromRoad=diffPic-target
     
     
-    total=abs(diffFromRoad[:,:,1])+abs(diffFromRoad[:,:,2]) 
+    total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
+    
     for j in range(total.shape[0]):
-        differences = [(i<4)*255 for i in total[j]]
-        diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
+        differences = [(sqrt(i)<5)*255 for i in total[j]]
+        differencesColor = [(sqrt(i)<100) for i in totalRBG[j]]
         
-    return np.array(diffPic, dtype=np.uint8)
+        diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
+        diffColor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
+        combine[j] =diffPic[j]*diffColor[j]
+    
+    print("Done with for loop")
+    
+    return np.array(combine, dtype=np.uint8)
     
 def updateRoadColor(picture):
     width=picture.shape[1]
@@ -80,9 +96,10 @@ if __name__== '__main__':
     
     color = updateRoadColor(img)
     print("color is " +str(color))
-    YUVcolor=convertToYUV(color)
-    print(YUVcolor)
+
+    print("Begin YUV Comparison")
+    photoTwo = findRoadYUV( color, img)
     photo = findRoadRGB( color, img)
     cv2.imwrite("diffPic.png", photo) 
-    photoTwo = findRoadYUV( color, img)
-    cv2.imwrite("YUVdiffPic.png", photoTwo) 
+   
+    cv2.imwrite("ZdiffPic.png", photoTwo) 
