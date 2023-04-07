@@ -7,10 +7,25 @@ def luminenceDifference(colorOne,colorTwo):
     pass
         
 def convertToYUV(color):
-    pass
+
+    image= np.copy(color)
+
+
+    image=np.float16(image)
+    v1 = [0.299, 0.587, 0.114]
+    v2 = [-0.147, - 0.289,  0.436]
+    v3 = [0.615, - 0.515, - 0.1]    
+    mat1 = np.array([v1, v2, v3])
+    mat1 = mat1.T
+    image = np.matmul(image, mat1)
+    output = np.float16(image.reshape(color.shape))
+
     
-def findRoad( roadColor, picture):
-    outPic=np.array(picture, dtype=np.uint8)
+    
+    return output
+    
+def findRoadRGB( roadColor, picture):
+   
     diffPic=np.array(picture, dtype=np.uint8)
     diffSmall=picture-roadColor
     diffFromRoad=np.array(diffSmall, dtype=np.uint32)
@@ -24,11 +39,28 @@ def findRoad( roadColor, picture):
     total=R+B+G #I need to check if there are overflow errors
     for j in range(total.shape[0]):
         differences = [(sqrt(i)<100)*255 for i in total[j]]
-        diffPic[j]=np.reshape(differences, (outPic.shape[1], 1))
-        
-    
-    cv2.imwrite("diffPic.png", diffPic) 
+        diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
+  
     return diffPic
+    
+def findRoadYUV( roadColor, picture):
+    
+    diffPic=convertToYUV(picture)
+    target=convertToYUV(roadColor)
+    
+    diffFromRoad=diffPic-target
+    
+    
+    total=abs(diffFromRoad[:,:,1])+abs(diffFromRoad[:,:,2]) 
+    for j in range(total.shape[0]):
+        differences = [(i<4)*255 for i in total[j]]
+        diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
+        
+          
+    print(diffPic)
+   
+ 
+    return np.array(diffPic, dtype=np.uint8)
     
 def updateRoadColor(picture):
     width=picture.shape[1]
@@ -46,11 +78,15 @@ def importPhoto(pictureName):#For testing purposes
     
         
 if __name__== '__main__':
-    #Run testing Script
+    #For testing purposes
 
     img = cv2.imread("FlatTrackDrive/test_1.png", cv2.IMREAD_ANYCOLOR)
     
     color = updateRoadColor(img)
     print("color is " +str(color))
-    
-    photo = findRoad( color, img)
+    YUVcolor=convertToYUV(color)
+    print(YUVcolor)
+    photo = findRoadRGB( color, img)
+    cv2.imwrite("diffPic.png", photo) 
+    photoTwo = findRoadYUV( color, img)
+    cv2.imwrite("YUVdiffPic.png", photoTwo) 
