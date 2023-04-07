@@ -56,10 +56,6 @@ def findRoadYUV( roadColor, picture):
         differences = [(i<4)*255 for i in total[j]]
         diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
         
-          
-    print(diffPic)
-   
- 
     return np.array(diffPic, dtype=np.uint8)
     
 def updateRoadColor(picture):
