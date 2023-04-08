@@ -1,11 +1,13 @@
 import cv2
+import cv
 import numpy as np
 from math import sqrt
+import os
+from skimage import measure
 
-    
-def luminenceDifference(colorOne,colorTwo):
-    pass
-        
+TESTING=False
+
+
 def convertToYUV(color):
 
     image= np.copy(color)
@@ -24,37 +26,21 @@ def convertToYUV(color):
     
     return output
     
-def findRoadRGB( roadColor, picture):
-   
-    diffPic=np.array(picture, dtype=np.uint8)
-    diffSmall=picture-roadColor
-    diffFromRoad=np.array(diffSmall, dtype=np.uint32)
-    R=diffFromRoad[:,:,0]**2
-    G=diffFromRoad[:,:,1]**2
-    B=diffFromRoad[:,:,2]**2
-    print("Initial " + str(diffFromRoad[0][0][0]))
-    print("Squared " + str(R[0][0]))
-    print("Squared " + str(G[0][0]))
-    print("Squared " + str(B[0][0]))
-    total=R+B+G #I need to check if there are overflow errors
-    for j in range(total.shape[0]):
-        differences = [(sqrt(i)<100)*255 for i in total[j]]
-        diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
-    print("done with for")
-    return diffPic
-    
-def findRoadYUV( roadColor, picture):
 
-    diffColor=np.array(picture, dtype=np.uint8)
-    combine=np.array(picture, dtype=np.uint8)
-    diffSmall=picture-roadColor
+    
+def findRoad( roadColor, picture):
+
+    blur = cv2.GaussianBlur(picture,(11,11),0)
+    diffColor=np.array(blur, dtype=np.uint8)
+    combine=np.array(blur, dtype=np.uint8)
+    diffSmall=blur-roadColor
     diffFromRoad=np.array(diffSmall, dtype=np.uint32)
     R=diffFromRoad[:,:,0]**2
     G=diffFromRoad[:,:,1]**2
     B=diffFromRoad[:,:,2]**2
     totalRBG=R+B+G
      
-    diffPic=convertToYUV(picture)
+    diffPic=convertToYUV(blur)
     target=convertToYUV(roadColor)
     print("Conversions Done")
     diffFromRoad=diffPic-target
@@ -63,21 +49,24 @@ def findRoadYUV( roadColor, picture):
     total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
     
     for j in range(total.shape[0]):
-        differences = [(sqrt(i)<5)*255 for i in total[j]]
-        differencesColor = [(sqrt(i)<100) for i in totalRBG[j]]
+        differences = [(sqrt(i)<2) for i in total[j]]
+        differencesColor = [(sqrt(i)<70) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
         
         diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
         diffColor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
-        combine[j] =diffPic[j]*diffColor[j]
+        combine[j] =((diffPic[j]+diffColor[j])>1)*255
     
     print("Done with for loop")
-    
+    if(TESTING):
+        cv2.imwrite("UVDiff.png",np.array(diffPic*255, dtype=np.uint8) ) 
+        temp=255*diffColor
+        cv2.imwrite("RGBDiff.png", np.array(temp, dtype=np.uint8)) 
     return np.array(combine, dtype=np.uint8)
     
 def updateRoadColor(picture):
     width=picture.shape[1]
     height=picture.shape[0]
-    cropped=picture[(height-100):height-50 ,int(width/4):int( 3*width/4), :]
+    cropped=picture[(height-200):height-50 ,int(width/4):int( 3*width/4), :]
     divided=cropped/(cropped.shape[0]*cropped.shape[1])
     #cv2.imwrite("crop.png", cropped) 
     avg=sum(sum(divided))
@@ -85,21 +74,43 @@ def updateRoadColor(picture):
 
     return output
     
-def importPhoto(pictureName):#For testing purposes
-    img = cv2.imread(pictureName, cv2.IMREAD_ANYCOLOR)
+def compressOnXDirection(image):
+    imageCopy = np.array(image, dtype=np.uint32)
+    imageCopy=imageCopy/255
+    print(imageCopy)
+   
+    x = np.sum(imageCopy[:,:,0], axis=0)
+    print("X is " +str(x))
+    
+    #Delete this
+    t = int(x.shape[0]/2)
+    print(x[t])
+    #End delete
+    
+    return x
+    
     
         
 if __name__== '__main__':
     #For testing purposes
 
-    img = cv2.imread("FlatTrackDrive/test_1.png", cv2.IMREAD_ANYCOLOR)
+    TESTING=True
+    
+    img = cv2.imread("FlatTrackDrive/test_6.png", cv2.IMREAD_ANYCOLOR)
     
     color = updateRoadColor(img)
     print("color is " +str(color))
 
     print("Begin YUV Comparison")
-    photoTwo = findRoadYUV( color, img)
-    photo = findRoadRGB( color, img)
-    cv2.imwrite("diffPic.png", photo) 
-   
-    cv2.imwrite("ZdiffPic.png", photoTwo) 
+    photoTwo = findRoad( color, img)
+
+    cv2.imwrite("RoadLocation.png", photoTwo) 
+
+    compressOnXDirection(photoTwo)
+#TODO: Add system to remove non-contiguouos pixels.
+    # for filename in os.listdir('FlatTrackDrive'):
+       # print(filename)
+       # img = cv2.imread("FlatTrackDrive/"+str(filename), cv2.IMREAD_ANYCOLOR)
+       # color = updateRoadColor(img)
+       # photoTwo = findRoad( color, img)
+       # cv2.imwrite(str(filename)+".png", photoTwo) 
