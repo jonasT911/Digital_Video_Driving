@@ -29,8 +29,10 @@ def convertToYUV(color):
 
     
 def findRoad( roadColor, picture):
-
-    blur = cv2.GaussianBlur(picture,(11,11),0)
+    open_cv_image = np.array(picture) 
+    # Convert RGB to BGR 
+    open_cv_image = open_cv_image[:, :, ::-1].copy() 
+    blur = cv2.GaussianBlur(open_cv_image,(11,11),0)
     diffColor=np.array(blur, dtype=np.uint8)
     combine=np.array(blur, dtype=np.uint8)
     diffSmall=blur-roadColor
@@ -42,21 +44,21 @@ def findRoad( roadColor, picture):
      
     diffPic=convertToYUV(blur)
     target=convertToYUV(roadColor)
-    print("Conversions Done")
+    
     diffFromRoad=diffPic-target
     
     
     total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
     
     for j in range(total.shape[0]):
-        differences = [(sqrt(i)<2) for i in total[j]]
-        differencesColor = [(sqrt(i)<70) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
+        differences = [(sqrt(i)<5) for i in total[j]]
+        differencesColor = [(sqrt(i)<170) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
         
         diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
         diffColor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
         combine[j] =((diffPic[j]+diffColor[j])>1)*255
     
-    print("Done with for loop")
+   
     if(TESTING):
         cv2.imwrite("UVDiff.png",np.array(diffPic*255, dtype=np.uint8) ) 
         temp=255*diffColor
@@ -64,9 +66,10 @@ def findRoad( roadColor, picture):
     return np.array(combine, dtype=np.uint8)
     
 def updateRoadColor(picture):
-    width=picture.shape[1]
-    height=picture.shape[0]
-    cropped=picture[(height-200):height-50 ,int(width/4):int( 3*width/4), :]
+    array=np.array(picture, dtype=np.uint8)
+    width=array.shape[1]
+    height=array.shape[0]
+    cropped=array[(height-200):height-50 ,int(width/4):int( 3*width/4), :]
     divided=cropped/(cropped.shape[0]*cropped.shape[1])
     #cv2.imwrite("crop.png", cropped) 
     avg=sum(sum(divided))
@@ -77,14 +80,14 @@ def updateRoadColor(picture):
 def compressOnXDirection(image):
     imageCopy = np.array(image, dtype=np.uint32)
     imageCopy=imageCopy/255
-    print(imageCopy)
+   
    
     x = np.sum(imageCopy[:,:,0], axis=0)
-    print("X is " +str(x))
+    #print("X is " +str(x))
     
     #Delete this
     t = int(x.shape[0]/2)
-    print(x[t])
+   
     #End delete
     
     return x
@@ -108,9 +111,10 @@ if __name__== '__main__':
 
     compressOnXDirection(photoTwo)
 #TODO: Add system to remove non-contiguouos pixels.
-    # for filename in os.listdir('FlatTrackDrive'):
-       # print(filename)
-       # img = cv2.imread("FlatTrackDrive/"+str(filename), cv2.IMREAD_ANYCOLOR)
-       # color = updateRoadColor(img)
-       # photoTwo = findRoad( color, img)
-       # cv2.imwrite(str(filename)+".png", photoTwo) 
+    for filename in os.listdir('FlatTrackDrive'):
+       print(filename)
+       img = cv2.imread("FlatTrackDrive/"+str(filename), cv2.IMREAD_ANYCOLOR)
+       color = updateRoadColor(img)
+       print(color)
+       photoTwo = findRoad( color, img)
+       cv2.imwrite(str(filename)+".png", photoTwo) 
