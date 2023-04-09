@@ -27,22 +27,18 @@ def convertToYUV(color):
     return output
     
 
-    
 def findRoad( roadColor, picture):
-    open_cv_image = np.array(picture) 
-    # Convert RGB to BGR 
-    open_cv_image = open_cv_image[:, :, ::-1].copy() 
-    blur = cv2.GaussianBlur(open_cv_image,(11,11),0)
-    diffColor=np.array(blur, dtype=np.uint8)
-    combine=np.array(blur, dtype=np.uint8)
-    diffSmall=blur-roadColor
+   
+    diffColor=np.array(picture, dtype=np.uint8)
+    combine=np.array(picture, dtype=np.uint8)
+    diffSmall=diffColor-roadColor
     diffFromRoad=np.array(diffSmall, dtype=np.uint32)
     R=diffFromRoad[:,:,0]**2
     G=diffFromRoad[:,:,1]**2
     B=diffFromRoad[:,:,2]**2
     totalRBG=R+B+G
      
-    diffPic=convertToYUV(blur)
+    diffPic=convertToYUV(diffColor)
     target=convertToYUV(roadColor)
     
     diffFromRoad=diffPic-target
@@ -65,11 +61,24 @@ def findRoad( roadColor, picture):
         cv2.imwrite("RGBDiff.png", np.array(temp, dtype=np.uint8)) 
     return np.array(combine, dtype=np.uint8)
     
-def updateRoadColor(picture):
+def rejectColor(oldColor,newColor):
+    if(sum(oldColor)==0):
+        return newColor
+    oldYUV=convertToYUV(np.array(oldColor))
+    newYUV=convertToYUV(np.array(newColor))
+    diff=abs(oldYUV-newYUV)
+    if(diff[0]>40 or diff[1]>3 or diff[2]>3):
+        #I may change this to allow leakage
+        print("rejected new color")
+        return oldColor 
+    else:
+        return newColor
+    
+def getRoadColor(picture):
     array=np.array(picture, dtype=np.uint8)
     width=array.shape[1]
     height=array.shape[0]
-    cropped=array[(height-200):height-50 ,int(width/4):int( 3*width/4), :]
+    cropped=array[(height-200):height-50 ,int(3*width/8):int( 5*width/8), :]
     divided=cropped/(cropped.shape[0]*cropped.shape[1])
     #cv2.imwrite("crop.png", cropped) 
     avg=sum(sum(divided))
@@ -101,7 +110,7 @@ if __name__== '__main__':
     
     img = cv2.imread("FlatTrackDrive/test_6.png", cv2.IMREAD_ANYCOLOR)
     
-    color = updateRoadColor(img)
+    color = getRoadColor(img)
     print("color is " +str(color))
 
     print("Begin YUV Comparison")
@@ -114,7 +123,7 @@ if __name__== '__main__':
     for filename in os.listdir('FlatTrackDrive'):
        print(filename)
        img = cv2.imread("FlatTrackDrive/"+str(filename), cv2.IMREAD_ANYCOLOR)
-       color = updateRoadColor(img)
+       color = getRoadColor(img)
        print(color)
        photoTwo = findRoad( color, img)
        cv2.imwrite(str(filename)+".png", photoTwo) 

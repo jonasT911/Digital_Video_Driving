@@ -13,8 +13,8 @@ print("Digital Video Project: begin")
 keyboard = Controller()#Move this Maybe?
 
 #Debugging Controls
-PrintImages=True
-ShowRoadDetectionImages=True
+PrintImages=False
+ShowRoadDetectionImages=False
 
 class gameInterface:
     iteration=0
@@ -35,54 +35,63 @@ class gameInterface:
         CameraRecord.append(im)
         return im
         
-    def drive(self,dutyCycle): #This needs to be done with multithreading
-    
-        sleep((1-dutyCycle)*1)
-        keyboard.release(self.driveKey)
-        sleep(dutyCycle*1)
-        keyboard.press(self.driveKey)
+    def pressAKey(self,dutyCycle,key): #This needs to be done with multithreading
+     
+        sleep((1-dutyCycle)*.3)
+        keyboard.press(key)
+        sleep((dutyCycle)*.3)
+        keyboard.release(key)
+       
         
 
     def turnCar(self,direction, dutyCycle=1):
         #direction will influence the duty cycle of turning left or right later
         #>0 means the road is to the right of the car. <0 means its to the left
-        if(direction>-10000000): #This needs to be weighted to the amount of white on screen
-            keyboard.press(self.rightKey)
-        else:
+        if(direction<-70):#Turn Left
             keyboard.release(self.rightKey)
-        if(direction<10000000):
             keyboard.press(self.leftKey)
-        else:
+            print("Turning Left")
+        elif(direction>70):      #Turn Right  
             keyboard.release(self.leftKey)
+            keyboard.press(self.rightKey)
+            print("Turning Right")
+        elif(abs(direction)<60):#Drive Straight
+            keyboard.release(self.leftKey)
+            keyboard.release(self.rightKey)
       
     def chooseDirection(self,picture):
     
-        self.roadColor=RoadDetection.updateRoadColor(picture)#Later I might give the ability to reject dramatic changes
+       
+        newColor=RoadDetection.getRoadColor(picture)#Later I might give the ability to reject dramatic changes
+        
+        self.roadColor=RoadDetection.rejectColor(self.roadColor,newColor)
         RoadLocation=RoadDetection.findRoad( self.roadColor, picture)
         distribution=RoadDetection. compressOnXDirection(RoadLocation)
-        total=0;
+        total=sum(distribution);
+        avgXLocation=0;
         for i in range(distribution.shape[0]):
-            total=total + (i-distribution.shape[0]/2)*distribution[i]
-       
+            avgXLocation=avgXLocation + (i-distribution.shape[0]/2)*distribution[i]
+        
+        avgXLocation=avgXLocation/total
         if(ShowRoadDetectionImages):
             print("iteration is " + str(self.iteration))
-            print(total)
+            print(avgXLocation)
             print(self.roadColor)
            
-            cv2.imwrite(str( self.iteration)+".png", RoadLocation) 
+            cv2.imwrite("DebuggingImages/"+str( self.iteration)+".png", RoadLocation) 
             self.iteration+=1
         
-        self.turnCar(total)
+        self.turnCar(avgXLocation)
         
         
 if __name__== '__main__':
     driver =gameInterface()
     
     x=0
-    while x<15:
+    while x<46:
         img=driver.takePicture()
         driver.chooseDirection(img)
-        driver.drive(.7)
+        driver.pressAKey(.8,driver.driveKey)
         #print("Picture taken")
         x+=1
       
@@ -93,7 +102,7 @@ if __name__== '__main__':
             i=i+1
             numpydata = np.array(im.convert('RGB'))
             destRGB = cv2.cvtColor(numpydata, cv2.COLOR_BGR2RGB)
-            cv2.imwrite("test_"+str(i)+".png", destRGB) 
+            cv2.imwrite("DebuggingImages/test_"+str(i)+".png", destRGB) 
     print("end")
 
     
