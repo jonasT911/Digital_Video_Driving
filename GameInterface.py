@@ -6,14 +6,25 @@ from pynput.keyboard import Key, Controller
 import cv2 
 import numpy as np
     
+import RoadDetection
+
 CameraRecord = []
 print("Digital Video Project: begin")
 keyboard = Controller()#Move this Maybe?
-class gameInterface:
 
- 
+#Debugging Controls
+PrintImages=False
+ShowRoadDetectionImages=False
+
+class gameInterface:
+    iteration=0
+    roadColor=[0,0,0]
+    driveKey="w"
+    leftKey="a"
+    rightKey="d"
+    
     def __init__(self):
-        pass
+        iteration=0
         #wsh.AppActivate("notepad") # select another application
         wsh= comclt.Dispatch("WScript.Shell")
         wsh.AppActivate("RaceRoom") 
@@ -22,39 +33,76 @@ class gameInterface:
     def takePicture(self):
         im = PIL.ImageGrab.grab()
         CameraRecord.append(im)
+        return im
+        
+    def pressAKey(self,dutyCycle,key): #This needs to be done with multithreading
+     
+        sleep((1-dutyCycle)*.3)
+        keyboard.press(key)
+        sleep((dutyCycle)*.3)
+        keyboard.release(key)
        
         
 
-    def hold_w (self,hold_time):
-        start = time.time()
-        while time.time() - start < hold_time:
-            pyautogui.press('w')
-               
-    def drive(self): #This needs to be done with multithreading
-        
-        sleep(.2)
-        keyboard.press(key)
-        sleep(.5)
-        keyboard.release(key)
+    def turnCar(self,direction, dutyCycle=1):
+        #direction will influence the duty cycle of turning left or right later
+        #>0 means the road is to the right of the car. <0 means its to the left
+        if(direction<-70):#Turn Left
+            keyboard.release(self.rightKey)
+            keyboard.press(self.leftKey)
+            print("Turning Left")
+        elif(direction>70):      #Turn Right  
+            keyboard.release(self.leftKey)
+            keyboard.press(self.rightKey)
+            print("Turning Right")
+        elif(abs(direction)<60):#Drive Straight
+            keyboard.release(self.leftKey)
+            keyboard.release(self.rightKey)
       
-
+    def chooseDirection(self,picture):
+    
+       
+        newColor=RoadDetection.getRoadColor(picture)#Later I might give the ability to reject dramatic changes
+        
+        self.roadColor=RoadDetection.rejectColor(self.roadColor,newColor)
+        RoadLocation=RoadDetection.findRoad( self.roadColor, picture)
+        distribution=RoadDetection. compressOnXDirection(RoadLocation)
+        total=sum(distribution);
+        avgXLocation=0;
+        for i in range(distribution.shape[0]):
+            avgXLocation=avgXLocation + (i-distribution.shape[0]/2)*distribution[i]
+        
+        avgXLocation=avgXLocation/total
+        if(ShowRoadDetectionImages):
+            print("iteration is " + str(self.iteration))
+            print(avgXLocation)
+            print(self.roadColor)
+           
+            cv2.imwrite("DebuggingImages/"+str( self.iteration)+".png", RoadLocation) 
+            self.iteration+=1
+        
+        self.turnCar(avgXLocation)
+        
+        
 if __name__== '__main__':
     driver =gameInterface()
-    key="w"
+    
     x=0
-    while x<25:
-        driver.takePicture()
-        driver.drive()
+    while x<46:
+        img=driver.takePicture()
+        driver.chooseDirection(img)
+        driver.pressAKey(.8,driver.driveKey)
         #print("Picture taken")
         x+=1
       
     i=0
-    for im in CameraRecord:
-      #  CameraRecord[i].show()#Showing is very slow
-        i=i+1
-        numpydata = np.array(im.convert('RGB'))
-        destRGB = cv2.cvtColor(numpydata, cv2.COLOR_BGR2RGB)
-        cv2.imwrite("test_"+str(i)+".png", destRGB) 
+    if(PrintImages):
+        for im in CameraRecord:
+          #  CameraRecord[i].show()#Showing is very slow
+            i=i+1
+            numpydata = np.array(im.convert('RGB'))
+            destRGB = cv2.cvtColor(numpydata, cv2.COLOR_BGR2RGB)
+            cv2.imwrite("DebuggingImages/test_"+str(i)+".png", destRGB) 
     print("end")
 
     
