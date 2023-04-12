@@ -56,15 +56,15 @@ class gameInterface:
     def turnCar(self,direction, dutyCycle=1):
         #direction will influence the duty cycle of turning left or right later
         #>0 means the road is to the right of the car. <0 means its to the left
-        if(direction<-0.15):#Turn Left
+        if(direction<-70):#Turn Left
             keyboard.release(self.rightKey)
             keyboard.press(self.leftKey)
             print("Turning Left")
-        elif(direction>0.15):      #Turn Right  
+        elif(direction>70):      #Turn Right  
             keyboard.release(self.leftKey)
             keyboard.press(self.rightKey)
             print("Turning Right")
-        elif(abs(direction)<0.1):#Drive Straight
+        elif(abs(direction)<60):#Drive Straight
             keyboard.release(self.leftKey)
             keyboard.release(self.rightKey)
       
@@ -79,10 +79,7 @@ class gameInterface:
         total=sum(distribution);
         avgXLocation=0;
         for i in range(distribution.shape[0]):
-            if(i<distribution.shape[0]/2):
-                avgXLocation=avgXLocation -distribution[i]
-            elif(i>distribution.shape[0]/2):
-                avgXLocation=avgXLocation +distribution[i]
+            avgXLocation=avgXLocation + (i-distribution.shape[0]/2)*distribution[i]
         
         avgXLocation=avgXLocation/total
         if(ShowRoadDetectionImages):
@@ -107,7 +104,7 @@ if __name__== '__main__':
 
     try:    
         x=0
-        while x<41:
+        while x<31:
             img=driver.takePicture()
             driver.chooseDirection(img)
             #driver.pressAKey(.8,driver.driveKey)
