@@ -8,13 +8,16 @@ import numpy as np
     
 import RoadDetection
 
+import threading
+
 CameraRecord = []
 print("Digital Video Project: begin")
 keyboard = Controller()#Move this Maybe?
 
 #Debugging Controls
-PrintImages=False
-ShowRoadDetectionImages=False
+PrintImages=True
+ShowRoadDetectionImages=True
+
 
 class gameInterface:
     iteration=0
@@ -22,6 +25,7 @@ class gameInterface:
     driveKey="w"
     leftKey="a"
     rightKey="d"
+    speed=0.4
     
     def __init__(self):
         iteration=0
@@ -36,26 +40,31 @@ class gameInterface:
         return im
         
     def pressAKey(self,dutyCycle,key): #This needs to be done with multithreading
-     
-        sleep((1-dutyCycle)*.3)
+        
         keyboard.press(key)
         sleep((dutyCycle)*.3)
         keyboard.release(key)
+        sleep((1-dutyCycle)*.3)
        
-        
+    def driveThread(self): #This needs to be done with multithreading
+        while driver.speed>-1:
+          
+            driver.pressAKey(self.speed,self.driveKey)
+
+       
 
     def turnCar(self,direction, dutyCycle=1):
         #direction will influence the duty cycle of turning left or right later
         #>0 means the road is to the right of the car. <0 means its to the left
-        if(direction<-70):#Turn Left
+        if(direction<-0.15):#Turn Left
             keyboard.release(self.rightKey)
             keyboard.press(self.leftKey)
             print("Turning Left")
-        elif(direction>70):      #Turn Right  
+        elif(direction>0.15):      #Turn Right  
             keyboard.release(self.leftKey)
             keyboard.press(self.rightKey)
             print("Turning Right")
-        elif(abs(direction)<60):#Drive Straight
+        elif(abs(direction)<0.1):#Drive Straight
             keyboard.release(self.leftKey)
             keyboard.release(self.rightKey)
       
@@ -70,7 +79,10 @@ class gameInterface:
         total=sum(distribution);
         avgXLocation=0;
         for i in range(distribution.shape[0]):
-            avgXLocation=avgXLocation + (i-distribution.shape[0]/2)*distribution[i]
+            if(i<distribution.shape[0]/2):
+                avgXLocation=avgXLocation -distribution[i]
+            elif(i>distribution.shape[0]/2):
+                avgXLocation=avgXLocation +distribution[i]
         
         avgXLocation=avgXLocation/total
         if(ShowRoadDetectionImages):
@@ -86,15 +98,27 @@ class gameInterface:
         
 if __name__== '__main__':
     driver =gameInterface()
-    
-    x=0
-    while x<46:
-        img=driver.takePicture()
-        driver.chooseDirection(img)
-        driver.pressAKey(.8,driver.driveKey)
-        #print("Picture taken")
-        x+=1
+
+
+    drive_thread = threading.Thread(target=driver.driveThread, args=())
+
+    drive_thread.start()
+
+
+    try:    
+        x=0
+        while x<41:
+            img=driver.takePicture()
+            driver.chooseDirection(img)
+            #driver.pressAKey(.8,driver.driveKey)
+            #print("Picture taken")
+            x+=1
+            
       
+    finally:
+        driver.speed=-1
+        drive_thread.join()  
+        
     i=0
     if(PrintImages):
         for im in CameraRecord:

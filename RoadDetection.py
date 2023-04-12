@@ -5,7 +5,7 @@ from math import sqrt
 import os
 from skimage import measure
 
-TESTING=False
+TESTING=True
 
 
 def convertToYUV(color):
@@ -47,8 +47,8 @@ def findRoad( roadColor, picture):
     total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
     
     for j in range(total.shape[0]):
-        differences = [(sqrt(i)<5) for i in total[j]]
-        differencesColor = [(sqrt(i)<170) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
+        differences = [(sqrt(i)<8 and (j>int(total.shape[0]/2))) for i in total[j]]
+        differencesColor = [((sqrt(i)<190 )and (j>int(total.shape[0]/2))) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
         
         diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
         diffColor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
@@ -78,7 +78,7 @@ def getRoadColor(picture):
     array=np.array(picture, dtype=np.uint8)
     width=array.shape[1]
     height=array.shape[0]
-    cropped=array[(height-200):height-50 ,int(3*width/8):int( 5*width/8), :]
+    cropped=array[(height-200):height-50 ,int(1*width/8):int( 7*width/8), :]
     divided=cropped/(cropped.shape[0]*cropped.shape[1])
     #cv2.imwrite("crop.png", cropped) 
     avg=sum(sum(divided))
