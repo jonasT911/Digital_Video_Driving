@@ -5,7 +5,9 @@ from math import sqrt
 import os
 from skimage import measure
 
-TESTING=False
+import datetime
+
+TESTING=True
 
 
 def convertToYUV(color):
@@ -28,9 +30,11 @@ def convertToYUV(color):
     
 
 def findRoad( roadColor, picture):
-   
+    
+    a=datetime.datetime.now()
+        
     diffColor=np.array(picture, dtype=np.uint8)
-    combine=np.array(picture, dtype=np.uint8)
+  
     diffSmall=diffColor-roadColor
     diffFromRoad=np.array(diffSmall, dtype=np.uint32)
     R=diffFromRoad[:,:,0]**2
@@ -43,23 +47,34 @@ def findRoad( roadColor, picture):
     
     diffFromRoad=diffPic-target
     
-    
+    outYUV=np.zeros(diffColor.shape, dtype=np.uint8)
+    outcolor=np.zeros(diffColor.shape, dtype=np.uint8)
+    outpic=np.zeros(diffColor.shape, dtype=np.uint8)
     total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
+    b=datetime.datetime.now()
     
-    for j in range(total.shape[0]):
-        differences = [(sqrt(i)<5 and (j>int(total.shape[0]/2))) for i in total[j]]
-        differencesColor = [((sqrt(i)<170 )and (j>int(total.shape[0]/2))) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
+    for j in range(int(total.shape[0]/20),int(total.shape[0]/10)):
+        differences = [(sqrt(i)<2) for i in total[j*10]]
+        differencesColor = [((sqrt(i)<100 )) for i in totalRBG[j*10]] ##Later I will change this to use Y values instead.
         
-        diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
-        diffColor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
-        combine[j] =((diffPic[j]+diffColor[j])>1)*255
+        outYUV[j]=np.reshape(differences, (diffPic.shape[1], 1))
+        outcolor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
+        outpic[j] =((outYUV[j]+outcolor[j])>1)*255
     
-   
+    c=datetime.datetime.now()
+
+    
     if(TESTING):
-        cv2.imwrite("UVDiff.png",np.array(diffPic*255, dtype=np.uint8) ) 
-        temp=255*diffColor
-        cv2.imwrite("RGBDiff.png", np.array(temp, dtype=np.uint8)) 
-    return np.array(combine, dtype=np.uint8)
+        print("FindRoad Time")
+
+        print(str(b-a))
+        print(str(c-b ))
+        print("FindRoad END")
+        cv2.imwrite("UVDiff.png",np.array(outYUV*255, dtype=np.uint8) ) 
+        cv2.imwrite("RGBDiff.png",np.array(outcolor*255, dtype=np.uint8) ) 
+    
+        cv2.imwrite("combine.png", np.array(outpic, dtype=np.uint8)) 
+    return np.array(outpic, dtype=np.uint8)
     
 def rejectColor(oldColor,newColor):
     if(sum(oldColor)==0):
@@ -67,9 +82,9 @@ def rejectColor(oldColor,newColor):
     oldYUV=convertToYUV(np.array(oldColor))
     newYUV=convertToYUV(np.array(newColor))
     diff=abs(oldYUV-newYUV)
-    if(diff[0]>40 or diff[1]>3 or diff[2]>3):
+    if(diff[0]>70 or diff[1]>2 or diff[2]>2):
         #I may change this to allow leakage
-        print("rejected new color")
+        #print("rejected new color")
         return oldColor 
     else:
         return newColor
