@@ -7,14 +7,16 @@ from pynput.keyboard import Key, Controller
 import cv2 
 import numpy as np
 import RoadDetection
-import RoadDetection2
+#import RoadDetection2
 from simplePID import PID
 import threading
-from features import *
+#from features import *
 import multiprocessing
 from multiprocessing import Process
 
-from RoadDetection2 import simpleRoad
+#from RoadDetection2 import simpleRoad
+import datetime
+
 
 print("Call Again?")
 CameraRecord = []
@@ -32,7 +34,7 @@ class gameInterface:
     leftKey="a"
     rightKey="d"
     brakeKey = "s"   # also will begin to reverse
-    speed= .8     #0.4
+    speed= .43     #0.4
     error = 0
     go = True
     brake = False
@@ -63,12 +65,12 @@ class gameInterface:
         while self.speed>-1:
             if self.go == True:
                 self.pressAKey(hold,self.driveKey)
-                print("Drive!")
+                #print("Drive!")
                 #print(self.error)
                 
             elif self.brake == True:
                 self.pressAKey(hold,self.brakeKey)
-                print("Brake!")
+                #print("Brake!")
             else:
                 continue
 
@@ -85,14 +87,14 @@ class gameInterface:
         if(direction<-.001):  #Turn Left
             keyboard.release(self.rightKey)
             keyboard.press(self.leftKey)
-            sleep(hold)                        # Tune Hold Time with PID
+            sleep(hold/24)                        # Tune Hold Time with PID
             keyboard.release(self.leftKey) 
             driver.accelerate(fade = 1)
             print("Turning Left")
         elif(direction>.001):  #Turn Right  
             keyboard.release(self.leftKey)
             keyboard.press(self.rightKey)
-            sleep(hold)
+            sleep(hold/24)
             keyboard.release(self.rightKey)
             driver.accelerate(fade = 1)
             print("Turning Right")
@@ -174,9 +176,9 @@ class gameInterface:
     def steer(self,error):
 
         # Not hitting ?
-        print("Steer!")
+        #print("Steer!")
         control = abs(pid(error))  # Try to correct from last measurement
-        print("Control Correction: " , control)   
+        #print("Control Correction: " , control)   
         self.turnCar(error, hold = control) 
         
 
@@ -189,46 +191,41 @@ if __name__== '__main__':
     pid = PID(wts[0],wts[1],wts[2], setpoint = 0) # try to drive error to 0
     #spid = PID(wts[0],wts[1],wts[2], setpoint = .3) # try to control speed better 
 
-    #drive_thread = threading.Thread(target=driver.driveThread, args=(driver.speed,))
+    drive_thread = threading.Thread(target=driver.driveThread, args=(driver.speed,))
     #steer_thread = Process(target=driver.steerThread, args=(pid,driver.error,))
 
-    #drive_thread.start()w
+    drive_thread.start()
     
     try:    
         x=0
-        while x<40:
+        while x<20:
             # Initial Steps, give some acceletation/boost
-            if x < 3:
-                driver.accelerate(fade = abs(2-x))
-                x+=1
-                # if x==3:
-                #     img=driver.takePicture()
-                #     prev=scale(cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_BGR2GRAY),.2)
-                # # get color:
-                continue
+
             
             img=driver.takePicture()
             # img=cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_BGR2RGB)
             # error, area, target = driver.measureTarget(img)
-
+            a=datetime.datetime.now()
             error = driver.chooseDirection(img)
             #mask, error = simpleRoad(img, getMetrics=False)
             print("Error:", error)
-            
+            b=datetime.datetime.now()
             driver.steer(error)
-            driver.accelerate(fade = 1)
-            # if (ShowRoadDetectionImages):
-            #     cv2.imwrite("DebuggingImages/Masks/test_"+str(x)+".png",mask) 
+            c=datetime.datetime.now()
 
-            
-            if x%10 == 0:
-                driver.go = False
-            if x%20 == 0:
-                driver.go = True
+            print("Time data")
+            print(b-a)
+            print(c-b)
+            print("End Time data")
+
+            if (ShowRoadDetectionImages):
+                pass
+                #cv2.imwrite("DebuggingImages/test_"+str(x)+".png",mask) 
+
             x+=1
     finally:
         driver.speed=-1
-        #drive_thread.join()
+        drive_thread.join()
         #steer_thread.join()
         
     i=0

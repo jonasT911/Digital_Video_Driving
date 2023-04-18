@@ -1,5 +1,5 @@
 import cv2
-import cv
+
 import numpy as np
 from math import sqrt
 import os
@@ -7,7 +7,7 @@ from skimage import measure
 
 import datetime
 
-TESTING=True
+TESTING=False
 
 
 def convertToYUV(color):
@@ -53,9 +53,9 @@ def findRoad( roadColor, picture):
     total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
     b=datetime.datetime.now()
     
-    for j in range(int(total.shape[0]/20),int(total.shape[0]/10)):
-        differences = [(sqrt(i)<2) for i in total[j*10]]
-        differencesColor = [((sqrt(i)<100 )) for i in totalRBG[j*10]] ##Later I will change this to use Y values instead.
+    for j in range(int(total.shape[0]/2),int(total.shape[0])):
+        differences = [(sqrt(i)<2) for i in total[j]]
+        differencesColor = [((sqrt(i)<100 )) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
         
         outYUV[j]=np.reshape(differences, (diffPic.shape[1], 1))
         outcolor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
