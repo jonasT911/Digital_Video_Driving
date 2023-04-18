@@ -47,8 +47,8 @@ def findRoad( roadColor, picture):
     total=(diffFromRoad[:,:,1])**2+(diffFromRoad[:,:,2])**2 
     
     for j in range(total.shape[0]):
-        differences = [(sqrt(i)<5) for i in total[j]]
-        differencesColor = [(sqrt(i)<170) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
+        differences = [(sqrt(i)<5 and (j>int(total.shape[0]/2))) for i in total[j]]
+        differencesColor = [((sqrt(i)<170 )and (j>int(total.shape[0]/2))) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
         
         diffPic[j]=np.reshape(differences, (diffPic.shape[1], 1))
         diffColor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
