@@ -24,7 +24,7 @@ keyboard = Controller()#Move this Maybe?
 PrintImages=True
 ShowRoadDetectionImages=True
 
-MAX_SPEED=.41
+MAX_SPEED=.418
 
 class gameInterface:
     iteration=0
@@ -158,9 +158,9 @@ if __name__== '__main__':
             d=datetime.datetime.now()
             print("Time value is" +str(d-c))
             
-            # slowDown=abs(error)/4000
-            # slowDown=min(slowDown,.1)
-            # driver.speed=MAX_SPEED-slowDown
+            slowDown=abs(error)/200
+            slowDown=min(slowDown,.2)
+            driver.speed=MAX_SPEED-slowDown
             
            
             x+=1
