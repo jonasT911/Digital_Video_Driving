@@ -54,8 +54,8 @@ def findRoad( roadColor, picture):
     b=datetime.datetime.now()
     
     for j in range(int(total.shape[0]/2),int(total.shape[0])):
-        differences = [(sqrt(i)<2) for i in total[j]]
-        differencesColor = [((sqrt(i)<100 )) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
+        differences = [(sqrt(i)<4) for i in total[j]]
+        differencesColor = [((sqrt(i)<150 )) for i in totalRBG[j]] ##Later I will change this to use Y values instead.
         
         outYUV[j]=np.reshape(differences, (diffPic.shape[1], 1))
         outcolor[j]=np.reshape(differencesColor, (diffPic.shape[1], 1))
@@ -82,7 +82,7 @@ def rejectColor(oldColor,newColor):
     oldYUV=convertToYUV(np.array(oldColor))
     newYUV=convertToYUV(np.array(newColor))
     diff=abs(oldYUV-newYUV)
-    if(diff[0]>70 or diff[1]>2 or diff[2]>2):
+    if(diff[0]>130 or diff[1]>8 or diff[2]>8):
         #I may change this to allow leakage
         #print("rejected new color")
         return oldColor 

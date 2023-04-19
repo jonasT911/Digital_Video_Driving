@@ -90,8 +90,10 @@ def gravelMask(hsv):
 
 def roadLabMask(lab):
     lab = cv2.cvtColor(lab, cv2.COLOR_BGR2LAB)
-    lower = np.array([10, 122, 120])
-    upper = np.array([255, 128, 132])
+    # lower = np.array([10, 122, 120])
+    # upper = np.array([255, 128, 132])
+    lower = np.array([5, 122, 120])
+    upper = np.array([255, 128, 130])
     roadlab = cv2.inRange(lab, lower, upper)
     return cv2.bitwise_and(lab, lab, mask=roadlab)
 
@@ -103,7 +105,7 @@ def treeLaneMask():
 def crop(img,view = "first", peripherals = True ):
     row, col, channel = img.shape
     if view == 'first':
-        vertices = np.array([[col//11,5*row//7], [3*col//8 , row//2], [5*col//8,row//2], [10*col//11,5*row//7]])
+        vertices = np.array([[2*col//11,5*row//7], [3*col//8 , row//2], [5*col//8,row//2], [9*col//11,5*row//7]])
         full = region_of_interest(img, vertices)
         if peripherals == True:
             vertices = np.array([[0,row], [0,4*row//7], [3*col//8 , row//2], [5*col//8,row//2], [col,4*row//7], [col,row]])
@@ -131,21 +133,24 @@ def crop(img,view = "first", peripherals = True ):
 
 
 def getRoad(img, playerView = "first", sides = False, dispTarget = True):
-    img = scale(img, .5)    # print(img.shape)
-    row,col,channel= img.shape
-    mid = col//2
-    lab = max_channel(roadLabMask(img)) 
-    region = crop(img, view = playerView, peripherals = sides)
-    cropped = (cv2.bitwise_and(region, lab)>0)*1
-    tgt, ey = getCenter(cropped)
-    error = tgt - mid
-    if dispTarget == True:
-        cv2.circle(img,(tgt,ey),radius = 4, color=(0,255,0), thickness=-1)
-        cv2.circle(img,(mid,ey),radius = 4, color=(0,0,255), thickness=-1)
-        cv2.line(img, (mid,row), (mid,ey),color=(0,0,255), thickness=2)
-        cv2.line(img, (mid,row),(tgt,ey),color=(0,255,0), thickness=2)
-        return img, cropped, error
-    return cropped, error
+
+        img = scale(img, .2)    # print(img.shape)
+        row,col,channel= img.shape
+        mid = col//2
+        lab = max_channel(roadLabMask(img)) 
+        #lab = max_channel(roadHsvMask(img)) 
+        region = crop(img, view = playerView, peripherals = sides)
+        cropped = (cv2.bitwise_and(region, lab)>0)*1
+        tgt, ey = getCenter(cropped)
+        error = tgt - mid
+        if dispTarget == True:
+            cv2.circle(img,(tgt,ey),radius = 4, color=(0,255,0), thickness=-1)
+            cv2.circle(img,(mid,ey),radius = 4, color=(0,0,255), thickness=-1)
+            cv2.line(img, (mid,row), (mid,ey),color=(0,0,255), thickness=2)
+            cv2.line(img, (mid,row),(tgt,ey),color=(0,255,0), thickness=2)
+            return img, cropped, error
+        return  error
+        
 
 
 

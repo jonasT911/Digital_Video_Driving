@@ -12,15 +12,19 @@ import threading
 
 import datetime
 
+from Detection import *
+
+from Detection import crop
 CameraRecord = []
 detectionImages = []
 print("Digital Video Project: begin")
 keyboard = Controller()#Move this Maybe?
 
 #Debugging Controls
-PrintImages=False
-ShowRoadDetectionImages=False
+PrintImages=True
+ShowRoadDetectionImages=True
 
+MAX_SPEED=.41
 
 class gameInterface:
     iteration=0
@@ -28,7 +32,9 @@ class gameInterface:
     driveKey="w"
     leftKey="a"
     rightKey="d"
-    speed=0.425
+    speed=MAX_SPEED
+    
+    previousError=0
     
     def __init__(self):
         iteration=0
@@ -56,23 +62,37 @@ class gameInterface:
 
        
 
-    def turnCar(self,direction, dutyCycle=1):
+    def turnCar(self,direction):
+        threshold=10
+        diff=direction-self.previousError
         #direction will influence the duty cycle of turning left or right later
         #>0 means the road is to the right of the car. <0 means its to the left
-        if(direction<-100):#Turn Left
+        if(direction<-threshold):#Turn Left
             keyboard.release(self.rightKey)
             keyboard.press(self.leftKey)
             #print("Turning Left")
-        elif(direction>100):      #Turn Right  
+        elif(direction>threshold):      #Turn Right  
             keyboard.release(self.leftKey)
             keyboard.press(self.rightKey)
             #print("Turning Right")
-        elif(abs(direction)<99):#Drive Straight
+        elif(abs(direction)<threshold):#Drive Straight
+           
             keyboard.release(self.leftKey)
             keyboard.release(self.rightKey)
+        
+        #Catch large swerves.
+        if(abs(diff)>5):
+            if(diff<0):
+                keyboard.release(self.rightKey)
+                keyboard.press(self.leftKey)
+            else:
+                keyboard.release(self.leftKey)
+                keyboard.press(self.rightKey)  
+         
+        self.previousError=direction
       
     def chooseDirection(self,picture):
-    
+      
         newColor=RoadDetection.getRoadColor(picture)#Later I might give the ability to reject dramatic changes
 
         self.roadColor=RoadDetection.rejectColor(self.roadColor,newColor)
@@ -119,11 +139,30 @@ if __name__== '__main__':
 
     try:    
         x=0
-        while x<551:
+        while True:
             img=driver.takePicture()
-            driver.chooseDirection(img)
-            #driver.pressAKey(.8,driver.driveKey)
-            #print("Picture taken")
+            c=datetime.datetime.now()
+            # driver.chooseDirection(img)
+            # region = crop(img, view = playerView, peripherals = sides)
+            convertedImg= cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
+            
+            try:
+                LineDemo,maskImg,error=getRoad(convertedImg,dispTarget=True)
+                maskImg*=255
+               
+                cv2.imwrite("DebuggingImages/Mask_"+str(x)+".png", maskImg)
+            except:
+                print("No Road found")
+            print("Error value is " +str(error))
+            driver.turnCar(error)
+            d=datetime.datetime.now()
+            print("Time value is" +str(d-c))
+            
+            # slowDown=abs(error)/4000
+            # slowDown=min(slowDown,.1)
+            # driver.speed=MAX_SPEED-slowDown
+            
+           
             x+=1
             
       
